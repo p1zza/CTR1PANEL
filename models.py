@@ -306,6 +306,7 @@ def getHelp(helpType):
     arr = {}
     with conn:
         with conn.cursor() as cur:
+            helpType = str("'%s'" %helpType)
             out = 'SELECT "helpValue" FROM "Help" where "helpType" = %s;' % helpType
             cur.execute(out)
             return cur.fetchall()[0]
