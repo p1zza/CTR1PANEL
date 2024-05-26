@@ -7,7 +7,7 @@ from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 try:
     conn = psycopg2.connect(
             dbname="ctr1panel",
-            user="username",
+            user="postgres",
             password = "postgres",
             host="postgres",
             port="5432"
@@ -93,8 +93,8 @@ def createDB():
     try:
         conn = psycopg2.connect(
         dbname="ctr1panel",
-        user="username",
-        password = "password",
+        user="postgres",
+        password = "postgres",
         host="postgres",
         port="5432"
         )
