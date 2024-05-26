@@ -10,7 +10,7 @@ try:
             user="username",
             password = "postgres",
             host="0.0.0.0",
-            port="11500"
+            port="5432"
             )
     cur = conn.cursor()
 except psycopg2.Error as e:
@@ -70,8 +70,9 @@ def createDB():
         conn = psycopg2.connect(
         dbname="postgres",
         user="postgres",
+        password = "postgres",
         host="0.0.0.0",
-        port="11500"
+        port="5432"
         )
 
         conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
@@ -81,16 +82,18 @@ def createDB():
         cur.execute("GRANT ALL PRIVILEGES ON DATABASE CTR1PANEL TO username;")
         conn.commit()
         conn.close()
+        
     except psycopg2.Error as e:
         print("Error: Unable to connect to the database")
         print(e)
+    
     try:
         conn = psycopg2.connect(
         dbname="ctr1panel",
         user="username",
         password = "password",
         host="0.0.0.0",
-        port="11500"
+        port="5432"
         )
         cur = conn.cursor()
         cur.execute(create_table_cargo)

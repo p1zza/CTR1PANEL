@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 COPY . .
 
 EXPOSE 11000
-EXPOSE 11500
+EXPOSE 5432
 
 # Run the application.
 CMD python app.py
