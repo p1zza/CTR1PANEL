@@ -313,6 +313,8 @@ def getHelp(helpType):
 def addHelp(data,datatype):
      with conn:
         with conn.cursor() as cur:
-            out = 'INSERT INTO "Help" ("helpValue","helpType") VALUES (\'%s\',\'%s\');' %(data,datatype)
+            data = str("'%s'" %data)
+            datatype = str("'%s'" %datatype)
+            out = 'INSERT INTO "Help" ("helpValue","helpType") VALUES (%s,%s);' %(data,datatype)
             cur.execute(out)
             conn.commit()
