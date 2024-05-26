@@ -5,6 +5,7 @@ services:
       context: .
     ports:
       - 11000:11000
+      - 11500:11500
   
   db:
     image: postgres:16

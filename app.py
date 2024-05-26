@@ -298,7 +298,7 @@ def checker():
         value = request.args.get('value')
         try:
             models.addHelp(value,ident)
-            return make_response(str(value + "" + ident), 200)
+            return make_response(str(ident), 200)
         except Exception as e:
             return make_response("Exception!" + e.pgerror, 200)
             
