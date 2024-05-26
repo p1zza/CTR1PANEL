@@ -1,0 +1,83 @@
+<head>
+    <link rel="stylesheet" href="{{url_for('static',filename='main.css')}}">
+    <nav class="menu">
+        <ul>
+            <li><a>Информация о вагоне на станции</a></li>
+        </ul>
+    </nav> 
+</head>
+
+<div class = "flashed_messages">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul class=flashes>
+          {% for message in messages %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+<body>
+
+{% if timetotrain == 'Поезд прибыл' %}
+        <pre> Состояние вагона: {{cargoVagonStatus}}</pre>
+        <div class="vagonLabel">
+            <div class="child">
+                Груз 1
+            </div>
+            <div class="child">
+                Груз 2
+            </div>
+            <div class="child">
+                Груз 3
+            </div>
+          </div>
+          <div class="parent">
+            <div class="child"> 
+                <!--Груз 1 - Еда-->
+                <pre> Тип груза: {{cargoFoodType}}</pre>
+                <pre> Имя груза: {{cargoFoodName}}</pre>
+                <pre> Количество груза: {{cargoFoodAmount}} шт.</pre>
+                <pre> Состояние груза: {{cargoFoodStatus}}</pre>
+                <pre> Введи {{cargoFoodPass}} для кражи</pre>
+                <form method="post" action="/station">
+                    <input type = "text" name="passFoodSteal">
+                    <input type= "submit" name="FoodSteal" value="FoodSteal">
+                </form>
+            </div>  
+            <div class="child">
+                <!--Груз 2 - Техника-->
+                <pre> Тип груза: {{cargoTechType}}</pre>
+                <pre> Имя груза: {{cargoTechName}}</pre>
+                <pre> Количество груза: {{cargoTechAmount}} шт.</pre>
+                <pre> Состояние груза: {{cargoTechStatus}}</pre>
+                <pre> Введи {{cargoTechPass}} для кражи</pre>
+                <form method="post" action="/station">
+                    <input type = "text" name="passTechSteal">
+                    <input type= "submit" name="TechSteal" value="TechSteal">
+                </form>
+                </div>
+            <div class="child">
+            <!--Груз 3 - Наука-->
+                <pre> Тип груза: {{cargoScienceType}}</pre>
+                <pre> Имя груза: {{cargoScienceName}}</pre>
+                <pre> Количество груза: {{cargoScienceAmount}} шт.</pre>
+                <pre> Состояние груза: {{cargoScienceStatus}}</pre>
+                <pre> Введи {{cargoSciencePass}} для кражи</pre>
+                <form method="post" action="/station">
+                    <input type = "text" name="passScienceSteal">
+                    <input type= "submit" name="ScienceSteal" value="ScienceSteal">
+                </form>
+                </div>
+            </form>
+          </div>
+
+    {% else %}
+        <h1> Поезд прибудет через: {{timetotrain}} минут</h1>
+        <h2>Ожидайте поезд на станции!</h2>
+    {% endif %}
+</body>
+
+<footer>
+    <div class="footer">&copy;<span> CyberCTF - [CTR1PANEL] </span></div>
+</footer>
