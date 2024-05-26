@@ -11,15 +11,10 @@ services:
     image: postgres:16
     container_name: postgres
     restart: always
-    env_file: .db-env
-    volumes: 
-      - db-data:/home/uctf/services/ctr1panel/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
     
-  volumes:
-    db-data:
   
