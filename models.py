@@ -41,7 +41,7 @@ create_table_vagon = """ CREATE TABLE IF NOT EXISTS "Vagon" (
 create_table_help = """ CREATE TABLE IF NOT EXISTS "Help" (
                         "id" INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY NOT NULL,
                         "helpValue" VARCHAR(50) NOT NULL,
-                        "helpType" integer UNIQUE NOT NULL); """
+                        "helpType" VARCHAR(50) UNIQUE NOT NULL); """
 
 #=================
 insert_into_cargo = """INSERT INTO "Cargo" (name, cargotype, amount, status, pass) VALUES 
