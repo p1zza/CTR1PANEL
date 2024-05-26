@@ -23,6 +23,8 @@ services:
       context: .
     ports:
       - 11000:11000
+    links:
+      - "db:database"
     depends_on:
       "db":
         condition: service_healthy

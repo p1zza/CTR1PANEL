@@ -12,4 +12,6 @@ COPY . .
 EXPOSE 11000
 EXPOSE 5432
 
+CMD python app.py
+
 

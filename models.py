@@ -9,7 +9,7 @@ try:
             dbname="ctr1panel",
             user="username",
             password = "postgres",
-            host="0.0.0.0",
+            host="postgres",
             port="5432"
             )
     cur = conn.cursor()
@@ -71,7 +71,7 @@ def createDB():
         dbname="postgres",
         user="postgres",
         password = "postgres",
-        host="0.0.0.0",
+        host="postgres",
         port="5432"
         )
 
@@ -92,7 +92,7 @@ def createDB():
         dbname="ctr1panel",
         user="username",
         password = "password",
-        host="0.0.0.0",
+        host="postgres",
         port="5432"
         )
         cur = conn.cursor()
