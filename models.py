@@ -14,6 +14,7 @@ try:
             )
     cur = conn.cursor()
 except psycopg2.Error as e:
+    print("Ошибка подключения к БД CTR1Panel с пользователем username")
     print(e)
 
 create_table_cargo = """ CREATE TABLE IF NOT EXISTS "Cargo" (
@@ -82,8 +83,10 @@ def createDB():
         cur.execute("GRANT ALL PRIVILEGES ON DATABASE CTR1PANEL TO username;")
         conn.commit()
         conn.close()
+        print("Создана БД CTR1PANEL, добавлен пользователь Username")
         
     except psycopg2.Error as e:
+        print("БД CTR1Panel с пользователем username не была создана")
         print("Error: Unable to connect to the database")
         print(e)
     
