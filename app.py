@@ -300,7 +300,7 @@ def checker():
             models.addHelp(value,ident)
             return make_response(str(ident), 200)
         except Exception as e:
-            return make_response("Exception!" + e.pgerror, 200)
+            return make_response("Exception!" + str(e), 200)
             
 
 

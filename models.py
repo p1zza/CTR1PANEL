@@ -304,18 +304,23 @@ def renewCargo():
 
 def getHelp(helpType):
     arr = {}
-    with conn:
-        with conn.cursor() as cur:
-            #helpType = str("'%s'" %helpType)
-            out = 'SELECT "helpValue" FROM "Help" where "helpType" = \'%s\';' % helpType
-            cur.execute(out)
-            return cur.fetchall()[0]
+    with conn.cursor() as cur:
+        #helpType = str("'%s'" %helpType)
+        out = 'SELECT "helpValue" FROM "Help" where "helpType" = \'%s\';' % helpType
+        cur.execute(out)
+        return cur.fetchall()[0]
 
 def addHelp(data,datatype):
-     with conn:
-        with conn.cursor() as cur:
-            data = str("'%s'" %data)
-            datatype = str("'%s'" %datatype)
-            out = 'INSERT INTO "Help" ("helpValue","helpType") VALUES (%s,%s);' %(data,datatype)
-            cur.execute(out)
-            conn.commit()
+    with conn.cursor() as cur:
+            try:
+                data = str("'%s'" %data)
+                datatype = str("'%s'" %datatype)
+                out = 'INSERT INTO "Help" ("helpValue","helpType") VALUES (%s,%s);' %(data,datatype)
+                cur.execute(out)
+                conn.commit()
+            except Exception as e:
+                conn.rollback()
+                return "Database error", 500
+                
+            
+            
