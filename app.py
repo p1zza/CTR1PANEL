@@ -368,28 +368,6 @@ def station():
         cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''),
         cargoFoodNameArray = models.getCargoNameArray('\'Мясо\''),cargoTechNameArray = models.getCargoNameArray('\'Техника\''), cargoScienceNameArray = models.getCargoNameArray('\'Наука\''), AddedCargoTypeArray = models.getCargoTypeArray())
     
-@app.route('/checker', methods=['GET','POST'])
-def checker():  
-    if request.method == "GET":
-        ident = request.args.get('id')
-        out = models.getHelp(ident)
-        if len(out)>0:
-            a = out[0]
-            return make_response(str(a),200)
-        else:
-            return make_response('',503)
-
-    if request.method == "POST":
-        ident = request.args.get('id')
-        value = request.args.get('value')
-        try:
-            models.addHelp(value,ident)
-            return make_response(str(ident), 200)
-        except Exception as e:
-            return make_response("Exception!" + str(e), 200)
-            
-
-
 @login_manager.unauthorized_handler
 def unauthorized():
     return redirect(url_for('login'))
