@@ -34,11 +34,6 @@ logger.addHandler(RotatingFileHandler(
        maxBytes=1024*1024, 
        backupCount=100))
 
-
-
-
-
-
 @app.route('/', methods=['GET','POST'])
 def index():
     if request.method == "GET":
@@ -290,9 +285,9 @@ def cargo():
 def station():
     if request.method == "GET":      
         return render_template("station.html", timetotrain = getTime(), cargoVagonStatus=  models.getVagonStatus('\'Cargo\''),
-        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
-        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
-        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''),
+        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''),
+        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),
+        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') ,
         cargoFoodNameArray = models.getCargoNameArray('\'Мясо\''),cargoTechNameArray = models.getCargoNameArray('\'Техника\''), cargoScienceNameArray = models.getCargoNameArray('\'Наука\''), AddedCargoTypeArray = models.getCargoTypeArray())
     if request.method == "POST":
         types = []
@@ -305,9 +300,9 @@ def station():
             models.insertCargo(selectedType,cargoName,cargoAmount,cargoPass,cargoComment)
             logger.info("%s Добавлен новый груз: Тип %s, Имя %s, Количество %s, Пароль %s, Комментарий %s" %(request.remote_addr,selectedType,cargoName,cargoAmount,cargoPass,cargoComment))
             return render_template("station.html", timetotrain = getTime(), cargoVagonStatus=  models.getVagonStatus('\'Cargo\''),
-        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
-        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
-        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''),
+        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''),
+        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),
+        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\''),
         cargoFoodNameArray = models.getCargoNameArray('\'Мясо\''),cargoTechNameArray = models.getCargoNameArray('\'Техника\''), cargoScienceNameArray = models.getCargoNameArray('\'Наука\''), AddedCargoTypeArray = models.getCargoTypeArray())
 
         if request.form.get('ScienceSteal') == 'ScienceSteal':
@@ -323,9 +318,9 @@ def station():
                 logger.warning("%s Груз Наука Украден! Введенный пароль: %s" %(request.remote_addr,userpass))
 
                 return render_template("station.html", timetotrain = getTime(), cargoVagonStatus=  models.getVagonStatus('\'Cargo\''),
-        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
-        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
-        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''),
+        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''),
+        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),
+        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\''),
         cargoFoodNameArray = models.getCargoNameArray('\'Мясо\''),cargoTechNameArray = models.getCargoNameArray('\'Техника\''), cargoScienceNameArray = models.getCargoNameArray('\'Наука\''), AddedCargoTypeArray = models.getCargoTypeArray())
             else:
                 logger.warning("%s Введен неверный пароль для груза:%s" %(request.remote_addr,userpass))
@@ -339,9 +334,9 @@ def station():
                 flash('Груз украден!')
                 logger.warning("%s Груз Техника Украден! Введенный пароль: %s" %(request.remote_addr,userpass))
                 return render_template("station.html", timetotrain = getTime(), cargoVagonStatus=  models.getVagonStatus('\'Cargo\''),
-        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
-        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
-        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''),
+        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''),
+        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),
+        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\''),
         cargoFoodNameArray = models.getCargoNameArray('\'Мясо\''),cargoTechNameArray = models.getCargoNameArray('\'Техника\''), cargoScienceNameArray = models.getCargoNameArray('\'Наука\''), AddedCargoTypeArray = models.getCargoTypeArray())
             else:
                 logger.warning("%s Введен неверный пароль %s для груза Техника" %(request.remote_addr,userpass))
@@ -355,17 +350,17 @@ def station():
                 flash('Груз украден!')
                 logger.warning("%s Груз Мясо Украден! Введенный пароль: %s" %(request.remote_addr,userpass))
                 return render_template("station.html", timetotrain = getTime(), cargoVagonStatus=  models.getVagonStatus('\'Cargo\''),
-        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
-        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
-        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''),
+        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''),
+        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),
+        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\''),
         cargoFoodNameArray = models.getCargoNameArray('\'Мясо\''),cargoTechNameArray = models.getCargoNameArray('\'Техника\''), cargoScienceNameArray = models.getCargoNameArray('\'Наука\''), AddedCargoTypeArray = models.getCargoTypeArray())
             else:
                 flash("Неверный пароль!") 
                 logger.warning("%s Введен неверный пароль %s для груза Мясо" %(request.remote_addr,userpass))  
         return render_template("station.html", timetotrain = getTime(), cargoVagonStatus=  models.getVagonStatus('\'Cargo\''),
-        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
-        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
-        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''),
+        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''),
+        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),
+        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\''),
         cargoFoodNameArray = models.getCargoNameArray('\'Мясо\''),cargoTechNameArray = models.getCargoNameArray('\'Техника\''), cargoScienceNameArray = models.getCargoNameArray('\'Наука\''), AddedCargoTypeArray = models.getCargoTypeArray())
     
 @login_manager.unauthorized_handler
