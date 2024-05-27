@@ -44,6 +44,16 @@
             <input id="humanTimeInput" name="humanTimeInput" type="text"> 
             <input type = "submit" value = "Обновить данные" name = "updateHumanTimeInput">
         </form>
+
+        <form method="post" action="/accounting">
+            <pre> Назначить капитаном пользователя </pre>
+            <select id = "dropdown" name = "userSelect">
+                {% for row in userArray %}
+                    <option value="{{row}}">{{row}}</option> 
+                {% endfor %}
+            </select> 
+            <input type = "submit" value = "Назначить капитаном" name = "nominateCaptain">
+        </form>
     </p>
 </div>
 

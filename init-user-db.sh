@@ -1,8 +1,0 @@
-#!/bin/bash
-set -e
-
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
-    CREATE DATABASE CTR1PANEL;
-    CREATE USER username WITH PASSWORD 'password' SUPERUSER;
-    GRANT ALL PRIVILEGES ON DATABASE CTR1PANEL TO username;
-EOSQL

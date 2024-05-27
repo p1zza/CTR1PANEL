@@ -23,7 +23,8 @@ create_table_cargo = """ CREATE TABLE IF NOT EXISTS "Cargo" (
                         "cargotype" VARCHAR(50) NOT NULL,
                         "amount" integer NOT NULL,
                         "status" BOOLEAN NOT NULL,
-                        "pass" VARCHAR(4) NOT NULL); """
+                        "pass" VARCHAR(4) NOT NULL,
+                        "info" VARCHAR (50) NULL); """
 
 create_table_users = """CREATE TABLE IF NOT EXISTS "Users" (
                         user_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, 
@@ -37,11 +38,6 @@ create_table_vagon = """ CREATE TABLE IF NOT EXISTS "Vagon" (
                         "vagontype" VARCHAR(50) NOT NULL,
                         "workers" integer NOT NULL,
                         "status" BOOLEAN NOT NULL); """
-
-create_table_help = """ CREATE TABLE IF NOT EXISTS "Help" (
-                        "id" INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY NOT NULL,
-                        "helpValue" VARCHAR(50) NOT NULL,
-                        "helpType" VARCHAR(50) UNIQUE NOT NULL); """
 
 #=================
 insert_into_cargo = """INSERT INTO "Cargo" (name, cargotype, amount, status, pass) VALUES 
@@ -58,9 +54,6 @@ insert_into_vagon = """INSERT INTO "Vagon"(vagontype,workers,status) VALUES
                         ('Accounting', '1', 'True'),
                         ('Cargo', '1', 'True');"""
 
-
-insert_into_help = """INSERT INTO "Help" ("helpValue","helpType") VALUES
-                        ('aasfdsfa-adsfasdfsd-SADadsd','1');"""
 
 
 #=======
@@ -102,11 +95,9 @@ def createDB():
         cur.execute(create_table_cargo)
         cur.execute(create_table_users)
         cur.execute(create_table_vagon)
-        cur.execute(create_table_help)
         cur.execute(insert_into_cargo)
         cur.execute(insert_into_users)
         cur.execute(insert_into_vagon)
-        #cur.execute(insert_into_help)
         conn.commit()
         conn.close()
     except psycopg2.Error as e:
@@ -114,8 +105,13 @@ def createDB():
 
 #Users
 def getUsers():
-    cur.execute(get_users)
-    cur.fetchall()
+    _out = []
+    with conn.cursor() as cur:
+        cur.execute('SELECT username FROM "Users";')
+        out = cur.fetchall()
+        for i in out:
+            _out.append(i[0])
+        return _out
 
 def getUser(username):
     with conn:
@@ -138,7 +134,7 @@ def insertUser(name,password):
 def selectUserComment(username):
     with conn:
         with conn.cursor() as cur:
-            cur.execute('SELECT comment FROM "Users" WHERE username = \'%s\';' %username)
+            cur.execute('SELECT comment FROM "Users" WHERE username = %s;' %username)
             return cur.fetchall()
 
 def updateUserComment(username,comment):
@@ -191,11 +187,10 @@ def getAccountingStatus(vagon):
     else:
         return "Не работает, недостаточно человекочасов"
 #Capitans
-def updateCaptainUsers(name,is_captain):
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute('UPDATE "Users" SET is_captain = "1" WHERE username = "' + name + '";')
-            conn.commit()
+def updateCaptain(name):
+    with conn.cursor() as cur:
+        cur.execute('UPDATE "Users" SET is_captain = \'1\' WHERE username = \'%s\';' %name)
+        conn.commit()
 
 def getCapitansList():
     _out = []
@@ -209,8 +204,19 @@ def getCapitansList():
 
 
 #Cargo
+def insertCargo(selectedType,cargoName,cargoAmount,cargoPass,cargoComment):
+    sql = 'INSERT INTO "Cargo" ("name","cargotype","amount", "status", "pass", "info") VALUES (\'%s\',\'%s\',\'%s\',\'True\',\'%s\',\'%s\');' %(cargoName, selectedType,cargoAmount,cargoPass,cargoComment)
+    with conn.cursor() as cur:
+        try:
+            cur.execute(sql)
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            print(e)
+            return "Database error", 500
+
 def getCargoType(cargoType):
-    sql = 'SELECT name from "Cargo" WHERE cargotype = %s;' %cargoType
+    sql = 'SELECT cargotype from "Cargo" WHERE name = %s;' %cargoType
     with conn:
         with conn.cursor() as cur:
             cur.execute(sql)
@@ -222,11 +228,22 @@ def getCargoTypeArray():
     _out = []
     with conn:
         with conn.cursor() as cur:
-            cur.execute('SELECT name from "Cargo";')
+            cur.execute('SELECT cargotype from "Cargo";')
             out = cur.fetchall()
             for i in out:
                 _out.append(i[0])
             return _out
+
+def getCargoNameArray(cargotype):
+    _out = []
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute('SELECT name from "Cargo" WHERE cargotype = %s;' %cargotype)
+            out = cur.fetchall()
+            for i in out:
+                _out.append(i[0])
+            return _out
+
 
 def getAllCargoAmount():
     with conn:
@@ -270,13 +287,6 @@ def updateCargoName(cargoType,cargoName):
             cur.execute(out)
             conn.commit()
 
-def getCargoPass(cargoType):
-    sql = 'SELECT pass from "Cargo" WHERE cargotype = %s;' %cargoType
-    cur.execute(sql)
-    out = cur.fetchall()
-    a = out[0]
-    return a[0]
-
 def getCargoName(cargoType):
     with conn:
         with conn.cursor() as cur:
@@ -286,41 +296,33 @@ def getCargoName(cargoType):
             a = out[0]
             return a[0]
 
+def getCargoComment(cargoName):
+    with conn.cursor() as cur:
+            sql = 'SELECT info from "Cargo" WHERE name = \'%s\';' %cargoName
+            cur.execute(sql)
+            out = cur.fetchall()
+            a = out[0]
+            return a[0]
+
+def getCargoPass(cargoType):
+    with conn.cursor() as cur:
+        sql = 'SELECT pass from "Cargo" WHERE cargotype = %s;' %cargoType
+        cur.execute(sql)
+        out = cur.fetchall()
+        a = out[0]
+        return a[0]
+
 def updateCargoPass(cargoName,cargoPass):
-    out = 'UPDATE "Cargo" SET pass =%s WHERE name = \'%s\';' %(cargoPass,cargoName)
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute(out)
-            conn.commit()
+    out = 'UPDATE "Cargo" SET pass =%s WHERE cargotype = \'%s\';' %(cargoPass,cargoName)
+    with conn.cursor() as cur:
+        cur.execute(out)
+        conn.commit()
 
 def renewCargo():
-    out = 'DELETE FROM "Cargo";'
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute(out)
-            conn.commit()
-            cur.execute(insert_into_cargo)
-            conn.commit()
-
-def getHelp(helpType):
-    arr = {}
     with conn.cursor() as cur:
-        #helpType = str("'%s'" %helpType)
-        out = 'SELECT "helpValue" FROM "Help" where "helpType" = \'%s\';' % helpType
-        cur.execute(out)
-        return cur.fetchall()[0]
+        cur.execute('UPDATE "Cargo" SET status = True WHERE cargotype = \'Мясо\';')
+        cur.execute('UPDATE "Cargo" SET status = True WHERE cargotype = \'Техника\';')
+        cur.execute('UPDATE "Cargo" SET status = True WHERE cargotype = \'Наука\';')
+        conn.commit()
 
-def addHelp(data,datatype):
-    with conn.cursor() as cur:
-            try:
-                data = str("'%s'" %data)
-                datatype = str("'%s'" %datatype)
-                out = 'INSERT INTO "Help" ("helpValue","helpType") VALUES (%s,%s);' %(data,datatype)
-                cur.execute(out)
-                conn.commit()
-            except Exception as e:
-                conn.rollback()
-                return "Database error", 500
-                
-            
             

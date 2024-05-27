@@ -9,12 +9,35 @@ from random import randint
 import re
 import jwt
 import psycopg2
+import logging
+from logging.handlers import RotatingFileHandler
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '66b1132a0173910b01ee3a15ef4e69583bbf2f7f1e4462c99efbe1b9ab5bf808'
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 userlogin = ""
+    # тип - успех, отказ
+    # Дата, время, тип события, имя пользователя, результат
+    # >1 МБ - создаем новый файл  .log.1
+
+logging.basicConfig(filename="logs/app.log",
+                    filemode='a',
+                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.INFO)
+
+logger = logging.getLogger('my_logger')
+logger.addHandler(RotatingFileHandler(
+       filename="logs/app.log", 
+       mode='a', 
+       maxBytes=1024*1024, 
+       backupCount=100))
+
+
+
+
+
 
 @app.route('/', methods=['GET','POST'])
 def index():
@@ -41,18 +64,23 @@ def registration():
         password = str(request.form['password'])
         if not validate(str(login)):
             flash("Допускается вводить только буквы и цифры")
+            logger.warning("%s Ошибка валидации логина при входе: %s" %(request.remote_addr,str(login)))
             return render_template("registration.html")
         if not validate(str(password)):
             flash("Допускается вводить только буквы и цифры")
+            logger.warning("%s Ошибка валидации пароля при входе: %s" %(request.remote_addr,str(password)))
             return render_template("registration.html")
 
         out = models.getUser(login)
         if len(out)== 0:
             models.insertUser(login,password)
+            logger.info("%s Успешная регистрация: %s:%s" %(request.remote_addr,login,password))
             flash("Успешная регистрация")
             return redirect(url_for('login'))
         else:
             flash("Учетная запись занята")
+            logger.warning("%s Учетная запись %s занята" %(login,request.remote_addr))
+
             return render_template('registration.html')
         return render_template("status.html",workersAmount = models.getWorkersAmount('\'Head\''), 
             headVagonStatus = models.getVagonStatus('\'Head\''), 
@@ -71,9 +99,11 @@ def login():
         password = str(request.form['password'])
         if not validate(str(username)):
             flash("Допускается вводить только буквы и цифры")
+            logger.warning("%s Ошибка валидации логина при входе: %s" %(request.remote_addr,login))
             return render_template("login.html")
         if not validate(str(password)):
             flash("Допускается вводить только буквы и цифры")
+            logger.warning("%s Ошибка валидации пароля при регистрации: %s" %(request.remote_addr,password))
             return render_template("login.html")
         row = models.getUser(username)
         arr = []
@@ -82,11 +112,13 @@ def login():
                 arr.append(i)
             if(password!=arr[2]):
                 flash("Неверный пароль / логин")
+                logger.warning("%s Введен неверный пароль: %s для пользователя: %s" %(request.remote_addr,password,username))
                 return render_template("login.html")
             else:
                 userlogin = UserLogin().create(arr[1])
                 login_user(userlogin)
                 flash("Успешный вход")
+                logger.info("%s Успешный вход:%s:%s" %(request.remote_addr,username,password))
                 content = {}
                 content ['username'] = []
                 content ['username'] = username
@@ -98,6 +130,7 @@ def login():
                 return response
         else:
             flash("Неверный пароль / логин")
+            logger.warning("%s Введен неверный пароль / логин: %s:%s" %(request.remote_addr,username,password))
             return render_template("login.html")
 
 #@login_required
@@ -119,14 +152,18 @@ def accounting():
     if request.method == "GET":
         username = ""
         user_comment = ""
+        userArray = models.getUsers()
         try:
             token = request.cookies.get("jwt")
             token_data = decodeJWT(token)
             username = token_data['user']
-            #user_comment = token_data['comment']
-            user_comment = models.selectUserComment(username)
+            user_comment = models.selectUserComment("\'%s\'"%username)
+            logger.info("%s Успешный вход в бухгалтерию: %s" %(request.remote_addr,token_data))
+            logger.info("%s Пользователь %s получил свой комментарий" %(request.remote_addr, username))
         except Exception as err:
+            logger.warning("%s Попытка неавторизованного входа в Бухгалтерию:%s" %(request.remote_addr,token_data))
             flash ("Пользователь неавторизован")
+            print(err)
             
         return render_template("accounting.html",
          cargoAmountStatus = models.getAllCargoAmount(),
@@ -134,11 +171,12 @@ def accounting():
          accountingVagonStatus = models.getVagonStatus('\'Accounting\''), 
          cargoVagonStatus = models.getVagonStatus('\'Cargo\''), 
          humanTime = models.getWorkersAmount('\'Head\''),
-         username = username, user_comment = user_comment)
+         username = username, user_comment = user_comment, userArray = userArray)
     if request.method == "POST":
+        token = request.cookies.get("jwt")
+        token_data = decodeJWT(token)
+        userArray = models.getUsers()
         if request.form.get('updateHumanTimeInput') == 'Обновить данные':
-            token = request.cookies.get("jwt")
-            token_data = decodeJWT(token)
             if token_data['is_admin'] == '1':
                 if len(request.form['humanTimeInput']) == 0:
                     flash("Не указаны человекочасы")
@@ -148,21 +186,31 @@ def accounting():
                     models.updateWorkersAmount(out,'\'Head\'')
                     username = token_data['user']
                     user_comment = token_data['comment']
+                    logger.info("%s Введены новые человекочасы: %s пользователем %s с комментарием %s" %(request.remote_addr, out,username,user_comment))
                     return render_template("accounting.html",
                         cargoAmountStatus = models.getAllCargoAmount(),
                         headVagonStatus = models.getVagonStatus('\'Head\''), 
                         accountingVagonStatus = models.getVagonStatus('\'Accounting\''), 
                         cargoVagonStatus = models.getVagonStatus('\'Cargo\''), 
                         humanTime = models.getWorkersAmount('\'Head\''),
-                        username = username, user_comment = user_comment)
+                        username = username, user_comment = user_comment, userArray = userArray)
             else:
                 flash('Только капитан может вносить изменения! Текущий пользователь:' + str(token_data))
-            if request.form.get('changeVagonStatusButton') == 'Принудительная уборка':
+                logger.warning("%s Попытка изменения человекочасов %s" %(request.remote_addr,token_data))
+        if request.form.get('changeVagonStatusButton') == 'Принудительная уборка':
                 workers = models.getWorkersAmount('\'Head\'')
                 if workers > 0:
                     models.updateVagonStatus("True",'\'Head\'')
                     models.updateVagonStatus("True",'\'Accounting\'')
                     models.updateVagonStatus("True",'\'Cargo\'')
+                    username = token_data['user']
+                    user_comment = token_data['comment']
+                    return render_template("accounting.html",cargoAmountStatus = models.getAllCargoAmount(),
+                                                headVagonStatus = models.getVagonStatus('\'Head\''), 
+                                                accountingVagonStatus = models.getVagonStatus('\'Accounting\''), 
+                                                cargoVagonStatus = models.getVagonStatus('\'Cargo\''), 
+                                                humanTime = models.getWorkersAmount('\'Head\''),
+                                                username = username, user_comment = user_comment, userArray = userArray)
                 else:
                     flash ("Нет человекочасов для уборки!")
         if request.form.get('userCommentInput') == 'Обновить комментарий':
@@ -173,13 +221,37 @@ def accounting():
             token_data['comment'] = user_comment
             models.updateUserComment(username,user_comment)
             token = encodeJWT(token_data)
+            logger.info("%s Для пользователя %s изменен комментарий:%s" %(request.remote_addr, username,user_comment))
             response = make_response(render_template("accounting.html",cargoAmountStatus = models.getAllCargoAmount(),
                                                 headVagonStatus = models.getVagonStatus('\'Head\''), 
                                                 accountingVagonStatus = models.getVagonStatus('\'Accounting\''), 
                                                 cargoVagonStatus = models.getVagonStatus('\'Cargo\''), 
-                                                humanTime = models.getWorkersAmount('\'Head\''),username = username, user_comment = user_comment))
+                                                humanTime = models.getWorkersAmount('\'Head\''),
+                                                username = username, user_comment = user_comment, userArray = userArray))
             response.set_cookie("jwt", token)
             return response
+        if request.form.get('nominateCaptain') == 'Назначить капитаном':
+            username = request.form.get('userSelect')
+            user_comment = token_data['comment']
+            if token_data["is_admin"] == '0':
+                flash("Только капитан может назначать капитана")
+                return render_template("accounting.html",cargoAmountStatus = models.getAllCargoAmount(),
+                                                    headVagonStatus = models.getVagonStatus('\'Head\''), 
+                                                    accountingVagonStatus = models.getVagonStatus('\'Accounting\''), 
+                                                    cargoVagonStatus = models.getVagonStatus('\'Cargo\''), 
+                                                    humanTime = models.getWorkersAmount('\'Head\''),
+                                                    username = username, user_comment = user_comment, userArray = userArray)
+            else:
+                models.updateCaptain(username)
+                flash("Пользователь %s назначен капитаном" %username)
+                logger.warning("%s %s Стал капитаном" %(request.remote_addr,username))
+                return render_template("accounting.html",cargoAmountStatus = models.getAllCargoAmount(),
+                                                    headVagonStatus = models.getVagonStatus('\'Head\''), 
+                                                    accountingVagonStatus = models.getVagonStatus('\'Accounting\''), 
+                                                    cargoVagonStatus = models.getVagonStatus('\'Cargo\''), 
+                                                    humanTime = models.getWorkersAmount('\'Head\''),
+                                                    username = username, user_comment = user_comment, userArray = userArray)
+            
 
         return render_template("accounting.html",
                         cargoAmountStatus = models.getAllCargoAmount(),
@@ -188,16 +260,14 @@ def accounting():
                         cargoVagonStatus = models.getVagonStatus('\'Cargo\''), 
                         humanTime = models.getWorkersAmount('\'Head\''))
 
-        
-
 @app.route('/cargo', methods=['GET','POST'])
 def cargo():
     if request.method == "GET":
         return render_template("cargo.html", 
         cargoTypeArray = models.getCargoTypeArray(),
-        cargoFoodType= models.getCargoType('\'Мясо\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
-        cargoTechType= models.getCargoType('\'Техника\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
-        cargoScienceType = models.getCargoType('\'Наука\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''))
+        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
+        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
+        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''))
     if request.method == "POST":
         if request.form.get('cargoChangePassButton') == 'Сохранить пароль':
             if len(request.form['cargoChangePass']) == 0:
@@ -206,44 +276,59 @@ def cargo():
                 passw = request.form['cargoChangePass']
                 selectedName = request.form.get('cargoSelect')
                 models.updateCargoPass(selectedName,passw)
+                logger.info("%s Введен новый пароль: %s для груза: %s" %(request.remote_addr,passw,selectedName))
                 flash("Пароль: "+ str(passw)+" сохранен для груза: " + str(selectedName))
             
         return render_template("cargo.html", 
         cargoTypeArray = models.getCargoTypeArray(),
-        cargoFoodType= models.getCargoType('\'Мясо\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
-        cargoTechType= models.getCargoType('\'Техника\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
-        cargoScienceType = models.getCargoType('\'Наука\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''))
+        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
+        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
+        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''))
 
         
 @app.route('/station', methods=['GET','POST'])
 def station():
     if request.method == "GET":      
         return render_template("station.html", timetotrain = getTime(), cargoVagonStatus=  models.getVagonStatus('\'Cargo\''),
-        cargoFoodType= models.getCargoType('\'Мясо\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
-        cargoTechType= models.getCargoType('\'Техника\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
-        cargoScienceType = models.getCargoType('\'Наука\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''),
-        cargoFoodName = models.getCargoName('\'Мясо\''),cargoTechName = models.getCargoName('\'Техника\''), cargoSciencename = models.getCargoName('\'Наука\'')
-        )
+        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
+        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
+        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''),
+        cargoFoodNameArray = models.getCargoNameArray('\'Мясо\''),cargoTechNameArray = models.getCargoNameArray('\'Техника\''), cargoScienceNameArray = models.getCargoNameArray('\'Наука\''), AddedCargoTypeArray = models.getCargoTypeArray())
     if request.method == "POST":
         types = []
+        if request.form.get('AddCargoButton') == 'AddCargoButton':
+            selectedType = request.form.get('AddedCargoTypeArrayDropdown')
+            cargoName = request.form['AddedCargoName']
+            cargoAmount = request.form['AddedCargoAmount']
+            cargoComment = request.form['AddedCommentCargoSteal']
+            cargoPass = models.getCargoPass('\'%s\'' %selectedType)
+            models.insertCargo(selectedType,cargoName,cargoAmount,cargoPass,cargoComment)
+            logger.info("%s Добавлен новый груз: Тип %s, Имя %s, Количество %s, Пароль %s, Комментарий %s" %(request.remote_addr,selectedType,cargoName,cargoAmount,cargoPass,cargoComment))
+            return render_template("station.html", timetotrain = getTime(), cargoVagonStatus=  models.getVagonStatus('\'Cargo\''),
+        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
+        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
+        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''),
+        cargoFoodNameArray = models.getCargoNameArray('\'Мясо\''),cargoTechNameArray = models.getCargoNameArray('\'Техника\''), cargoScienceNameArray = models.getCargoNameArray('\'Наука\''), AddedCargoTypeArray = models.getCargoTypeArray())
+
         if request.form.get('ScienceSteal') == 'ScienceSteal':
             rightpass = models.getCargoPass('\'Наука\'')
             userpass = request.form['passScienceSteal']
+
             if rightpass == userpass:
                 models.updateCargoStatus('\'Наука\'')
-                newType = models.getHelp()
-                models.updateCargoName(newType,'\'Наука\'')
-                ar = models.getCargoTypeArray()
-                for i in ar:
-                    types.append(i)
-                flash(types[2])
+                cargoName = request.form.get('cargoScienceName')
+                cargoComment = models.getCargoComment(cargoName)
+                flash(cargoComment)
+                logger.info("%s Для груза %s показан комментарий %s" %(request.remote_addr,cargoName,cargoComment))
+                logger.warning("%s Груз Наука Украден! Введенный пароль: %s" %(request.remote_addr,userpass))
+
                 return render_template("station.html", timetotrain = getTime(), cargoVagonStatus=  models.getVagonStatus('\'Cargo\''),
-        cargoFoodType= models.getCargoType('\'Мясо\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
-        cargoTechType= models.getCargoType('\'Техника\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
-        cargoScienceType = models.getCargoType('\'Наука\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''),
-        cargoFoodName = models.getCargoName('\'Мясо\''),cargoTechName = models.getCargoName('\'Техника\''), cargoSciencename = models.getCargoName('\'Наука\'')
-        )
+        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
+        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
+        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''),
+        cargoFoodNameArray = models.getCargoNameArray('\'Мясо\''),cargoTechNameArray = models.getCargoNameArray('\'Техника\''), cargoScienceNameArray = models.getCargoNameArray('\'Наука\''), AddedCargoTypeArray = models.getCargoTypeArray())
             else:
+                logger.warning("%s Введен неверный пароль для груза:%s" %(request.remote_addr,userpass))
                 flash('Неверный пароль!')
             
         if request.form.get('TechSteal') == 'TechSteal':
@@ -252,13 +337,14 @@ def station():
             if rightpass == userpass:
                 models.updateCargoStatus('\'Техника\'')
                 flash('Груз украден!')
+                logger.warning("%s Груз Техника Украден! Введенный пароль: %s" %(request.remote_addr,userpass))
                 return render_template("station.html", timetotrain = getTime(), cargoVagonStatus=  models.getVagonStatus('\'Cargo\''),
-        cargoFoodType= models.getCargoType('\'Мясо\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
-        cargoTechType= models.getCargoType('\'Техника\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
-        cargoScienceType = models.getCargoType('\'Наука\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''),
-        cargoFoodName = models.getCargoName('\'Мясо\''),cargoTechName = models.getCargoName('\'Техника\''), cargoSciencename = models.getCargoName('\'Наука\'')
-        )
+        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
+        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
+        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''),
+        cargoFoodNameArray = models.getCargoNameArray('\'Мясо\''),cargoTechNameArray = models.getCargoNameArray('\'Техника\''), cargoScienceNameArray = models.getCargoNameArray('\'Наука\''), AddedCargoTypeArray = models.getCargoTypeArray())
             else:
+                logger.warning("%s Введен неверный пароль %s для груза Техника" %(request.remote_addr,userpass))
                 flash("Неверный пароль!")
 
         if request.form.get('FoodSteal') == 'FoodSteal':
@@ -267,20 +353,20 @@ def station():
             if rightpass == userpass:
                 models.updateCargoStatus('\'Мясо\'')
                 flash('Груз украден!')
+                logger.warning("%s Груз Мясо Украден! Введенный пароль: %s" %(request.remote_addr,userpass))
                 return render_template("station.html", timetotrain = getTime(), cargoVagonStatus=  models.getVagonStatus('\'Cargo\''),
-        cargoFoodType= models.getCargoType('\'Мясо\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
-        cargoTechType= models.getCargoType('\'Техника\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
-        cargoScienceType = models.getCargoType('\'Наука\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''),
-        cargoFoodName = models.getCargoName('\'Мясо\''),cargoTechName = models.getCargoName('\'Техника\''), cargoSciencename = models.getCargoName('\'Наука\'')
-        )
+        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
+        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
+        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''),
+        cargoFoodNameArray = models.getCargoNameArray('\'Мясо\''),cargoTechNameArray = models.getCargoNameArray('\'Техника\''), cargoScienceNameArray = models.getCargoNameArray('\'Наука\''), AddedCargoTypeArray = models.getCargoTypeArray())
             else:
-                flash("Неверный пароль!")    
+                flash("Неверный пароль!") 
+                logger.warning("%s Введен неверный пароль %s для груза Мясо" %(request.remote_addr,userpass))  
         return render_template("station.html", timetotrain = getTime(), cargoVagonStatus=  models.getVagonStatus('\'Cargo\''),
-        cargoFoodType= models.getCargoType('\'Мясо\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
-        cargoTechType= models.getCargoType('\'Техника\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
-        cargoScienceType = models.getCargoType('\'Наука\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''),
-        cargoFoodName = models.getCargoName('\'Мясо\''),cargoTechName = models.getCargoName('\'Техника\''), cargoSciencename = models.getCargoName('\'Наука\'')
-        )
+        cargoFoodType= models.getCargoType('\'Свинина\''), cargoFoodAmount = models.getCargoAmount('\'Мясо\''), cargoFoodStatus = models.getCargoStatus('\'Мясо\''), cargoFoodPass= models.getCargoPass('\'Мясо\''),
+        cargoTechType= models.getCargoType('\'Инструменты\''), cargoTechAmount = models.getCargoAmount('\'Техника\''), cargoTechStatus = models.getCargoStatus('\'Техника\''),cargoTechPass = models.getCargoPass('\'Техника\''),
+        cargoScienceType = models.getCargoType('\'Исследования\''),cargoScienceAmount= models.getCargoAmount('\'Наука\''), cargoScienceStatus= models.getCargoStatus('\'Наука\'') , cargoSciencePass= models.getCargoPass('\'Наука\''),
+        cargoFoodNameArray = models.getCargoNameArray('\'Мясо\''),cargoTechNameArray = models.getCargoNameArray('\'Техника\''), cargoScienceNameArray = models.getCargoNameArray('\'Наука\''), AddedCargoTypeArray = models.getCargoTypeArray())
     
 @app.route('/checker', methods=['GET','POST'])
 def checker():  
@@ -327,6 +413,7 @@ def getTime():
 
     if int(time)%5 == 0:
         models.renewCargo()
+        logger.info("Поезд прибыл, товары в наличии")
         return 'Поезд прибыл'
     else:
         out = 3 - int(time)%3 
@@ -356,6 +443,8 @@ class UserLogin():
         else:
             return NULL
 
+
+
 #регулярка
 def validate(s):
     regex = re.compile(r'^[a-zA-Z0-9]+$')
@@ -376,4 +465,4 @@ def decodeJWT(token):
 
 if __name__ == '__main__':
     models.createDB()
-    app.run(debug=True, port = 11000, host='0.0.0.0')
+    app.run(debug=False, port = 11000, host='0.0.0.0')
