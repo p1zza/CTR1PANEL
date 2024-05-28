@@ -114,32 +114,27 @@ def getUsers():
         return _out
 
 def getUser(username):
-    with conn:
-        with conn.cursor() as cur:
+    with conn.cursor() as cur:
             cur.execute('SELECT * FROM "Users" WHERE username = \'%s\';' %username)
             return cur.fetchall()
 
 def getUserID(username):
-    with conn:
-        with conn.cursor() as cur:
+    with conn.cursor() as cur:
             cur.execute('SELECT user_id FROM "Users" WHERE username = \'%s\';' %username)
             return cur.fetchall()
 
 def insertUser(name,password):
-    with conn:
-        with conn.cursor() as cur:
+    with conn.cursor() as cur:
             cur.execute('INSERT INTO "Users" (username,password,is_captain) VALUES (\'%s\',\'%s\',0);' %(name,password))
             conn.commit()
 
 def selectUserComment(username):
-    with conn:
-        with conn.cursor() as cur:
+    with conn.cursor() as cur:
             cur.execute('SELECT comment FROM "Users" WHERE username = %s;' %username)
             return cur.fetchall()
 
 def updateUserComment(username,comment):
-    with conn:
-        with conn.cursor() as cur:
+    with conn.cursor() as cur:
             cur.execute('UPDATE "Users" SET comment = \'%s\' WHERE username = \'%s\';' %(comment,username))
             conn.commit()
     
@@ -147,8 +142,7 @@ def updateUserComment(username,comment):
 #HeadVagon
 def getWorkersAmount(vagon):
     out = ""
-    with conn:
-        with conn.cursor() as cur:
+    with conn.cursor() as cur:
             cur.execute('SELECT workers FROM "Vagon" WHERE vagontype = %s;' % vagon)
             out = cur.fetchall()
             a = out[0]
@@ -156,8 +150,7 @@ def getWorkersAmount(vagon):
 
 def updateWorkersAmount(workers,vagonType):
     out = 'UPDATE "Vagon" SET workers = %s WHERE vagontype = %s;' %(workers,vagonType)
-    with conn:
-        with conn.cursor() as cur:
+    with conn.cursor() as cur:
             cur.execute(out)
             conn.commit()
 
@@ -165,8 +158,7 @@ def updateWorkersAmount(workers,vagonType):
 def getVagonStatus(vagon):
     str_ = 'SELECT status FROM "Vagon" WHERE vagontype = %s;' % vagon
     out = ""
-    with conn:
-        with conn.cursor() as cur:
+    with conn.cursor() as cur:
             cur.execute(str_)
             out = cur.fetchall()
     if out[0] == (True,):
@@ -176,8 +168,7 @@ def getVagonStatus(vagon):
 
 def updateVagonStatus(status,vagonType):
     out = 'UPDATE "Vagon" SET status =%s WHERE vagontype = %s;' %(status,vagonType)
-    with conn:
-        with conn.cursor() as cur:
+    with conn.cursor() as cur:
             cur.execute(out)
             conn.commit()
 
@@ -194,8 +185,7 @@ def updateCaptain(name):
 
 def getCapitansList():
     _out = []
-    with conn:
-        with conn.cursor() as cur:
+    with conn.cursor() as cur:
             cur.execute('SELECT username from "Users" WHERE is_captain = \'1\';')
             out = cur.fetchall()
             for i in out:
@@ -217,8 +207,7 @@ def insertCargo(selectedType,cargoName,cargoAmount,cargoPass,cargoComment):
 
 def getCargoType(cargoType):
     sql = 'SELECT cargotype from "Cargo" WHERE name = %s;' %cargoType
-    with conn:
-        with conn.cursor() as cur:
+    with conn.cursor() as cur:
             cur.execute(sql)
             out = cur.fetchall()
             a = out[0]
@@ -226,8 +215,7 @@ def getCargoType(cargoType):
 
 def getCargoTypeArray():
     _out = []
-    with conn:
-        with conn.cursor() as cur:
+    with conn.cursor() as cur:
             cur.execute('SELECT cargotype from "Cargo";')
             out = cur.fetchall()
             for i in out:
@@ -236,8 +224,7 @@ def getCargoTypeArray():
 
 def getCargoNameArray(cargotype):
     _out = []
-    with conn:
-        with conn.cursor() as cur:
+    with conn.cursor() as cur:
             cur.execute('SELECT name from "Cargo" WHERE cargotype = %s;' %cargotype)
             out = cur.fetchall()
             for i in out:
@@ -246,8 +233,7 @@ def getCargoNameArray(cargotype):
 
 
 def getAllCargoAmount():
-    with conn:
-        with conn.cursor() as cur:
+    with conn.cursor() as cur:
             cur.execute('SELECT amount from "Cargo";')
             out = cur.fetchall()
             amount = 0
@@ -256,8 +242,7 @@ def getAllCargoAmount():
             return amount
 
 def getCargoAmount(cargoType):
-    with conn:
-        with conn.cursor() as cur:
+    with conn.cursor() as cur:
             sql = 'SELECT amount from "Cargo" WHERE cargotype = %s;' %cargoType
             cur.execute(sql)
             out = cur.fetchall()
@@ -265,8 +250,7 @@ def getCargoAmount(cargoType):
             return a[0]
 
 def getCargoStatus(cargoType):
-    with conn:
-        with conn.cursor() as cur:
+    with conn.cursor() as cur:
             sql = 'SELECT status from "Cargo" WHERE cargotype = %s;' %cargoType
             cur.execute(sql)
             out = cur.fetchall()
@@ -275,21 +259,18 @@ def getCargoStatus(cargoType):
 
 def updateCargoStatus(cargoName):
     out = 'UPDATE "Cargo" SET status = False WHERE cargotype = %s;' %(cargoName)
-    with conn:
-        with conn.cursor() as cur:
+    with conn.cursor() as cur:
             cur.execute(out)
             conn.commit()
 
 def updateCargoName(cargoType,cargoName):
     out = 'UPDATE "Cargo" SET name = \'%s\' WHERE cargotype = %s;' %(cargoType, cargoName)
-    with conn:
-        with conn.cursor() as cur:
+    with conn.cursor() as cur:
             cur.execute(out)
             conn.commit()
 
 def getCargoName(cargoType):
-    with conn:
-        with conn.cursor() as cur:
+    with conn.cursor() as cur:
             sql = 'SELECT name from "Cargo" WHERE cargotype = %s;' %cargoType
             cur.execute(sql)
             out = cur.fetchall()
