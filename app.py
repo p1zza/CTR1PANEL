@@ -384,7 +384,7 @@ def getTime():
         else:
             models.updateVagonStatus("False",'\'Cargo\'')
 
-    if int(time)%5 == 0:
+    if int(time)%3 == 0:
         models.renewCargo()
         logger.info("Поезд прибыл, товары в наличии")
         return 'Поезд прибыл'
