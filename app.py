@@ -74,7 +74,7 @@ def registration():
             return redirect(url_for('login'))
         else:
             flash("Учетная запись занята")
-            logger.warning("%s Учетная запись %s занята" %(login,request.remote_addr))
+            logger.warning("%s Учетная запись %s занята" %(request.remote_addr,login))
 
             return render_template('registration.html')
         return render_template("status.html",workersAmount = models.getWorkersAmount('\'Head\''), 
