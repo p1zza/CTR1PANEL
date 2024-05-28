@@ -147,20 +147,31 @@ def accounting():
     if request.method == "GET":
         username = ""
         user_comment = ""
+        token_data = "None"
         userArray = models.getUsers()
         try:
             token = request.cookies.get("jwt")
-            token_data = decodeJWT(token)
-            username = token_data['user']
-            user_comment = models.selectUserComment("\'%s\'"%username)
-            logger.info("%s Успешный вход в бухгалтерию: %s" %(request.remote_addr,token_data))
-            logger.info("%s Пользователь %s получил свой комментарий" %(request.remote_addr, username))
+            if token != None:
+                token_data = decodeJWT(token)
+                username = token_data['user']
+                user_comment = models.selectUserComment("\'%s\'"%username)
+                logger.info("%s Успешный вход в бухгалтерию: %s" %(request.remote_addr,token_data))
+                logger.info("%s Пользователь %s получил свой комментарий" %(request.remote_addr, username))
+            else:
+                logger.warning("%s Попытка неавторизованного входа в Бухгалтерию:%s" %(request.remote_addr,token_data))
+                flash ("Пользователь неавторизован")
         except Exception as err:
-            logger.warning("%s Попытка неавторизованного входа в Бухгалтерию:%s" %(request.remote_addr,token_data))
-            flash ("Пользователь неавторизован")
-            print(err)
             
-        return render_template("accounting.html",
+            print(err)
+    return render_template("accounting.html",
+         cargoAmountStatus = models.getAllCargoAmount(),
+         headVagonStatus = models.getVagonStatus('\'Head\''), 
+         accountingVagonStatus = models.getVagonStatus('\'Accounting\''), 
+         cargoVagonStatus = models.getVagonStatus('\'Cargo\''), 
+         humanTime = models.getWorkersAmount('\'Head\''),
+         username = username, user_comment = user_comment, userArray = userArray)
+            
+    return render_template("accounting.html",
          cargoAmountStatus = models.getAllCargoAmount(),
          headVagonStatus = models.getVagonStatus('\'Head\''), 
          accountingVagonStatus = models.getVagonStatus('\'Accounting\''), 
@@ -248,7 +259,7 @@ def accounting():
                                                     username = username, user_comment = user_comment, userArray = userArray)
             
 
-        return render_template("accounting.html",
+    return render_template("accounting.html",
                         cargoAmountStatus = models.getAllCargoAmount(),
                         headVagonStatus = models.getVagonStatus('\'Head\''), 
                         accountingVagonStatus = models.getVagonStatus('\'Accounting\''), 
